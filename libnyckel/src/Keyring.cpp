@@ -80,16 +80,22 @@ nyckel::MasterKey nyckel::Keyring::getMasterKey(const std::u32string_view& input
     if (input.length() > MAX_PASSWORD_LENGTH) {
         throw std::exception();
     }
+
     MasterKey masterKey{};
+
     gsl::span<const std::byte, 16> id = this->id.as_bytes();
+    int inputSize = (int) (input.size() * 4);
+    int inputDataSize = id.size_bytes() + inputSize;
+    auto* inputData = new unsigned char[inputDataSize];
+    memcpy(inputData, id.data(), id.size_bytes());
+    memcpy(inputData + id.size_bytes(), input.data(), inputSize);
+
     std::basic_string_view<std::byte> globalSalt = getConfiguration()->getSalt();
-    auto* data = new unsigned char[id.size_bytes() + globalSalt.size()];
-    memcpy(data, id.data(), id.size_bytes());
-    memcpy(data + id.size_bytes(), globalSalt.data(), globalSalt.size());
+
     EVP_BytesToKey(
             EVP_aes_256_cbc(), EVP_sha3_512(), // algorithms
-            (const unsigned char*) data, // salt
-            (const unsigned char*) input.data(), (int) input.length() * 4, // data & data length
+            (const unsigned char*) globalSalt.data(), // salt
+            (const unsigned char*) inputData, inputDataSize, // data & data length
             MASTER_KEY_GEN_ROUNDS, // round count
             masterKey.key, masterKey.iv // pointers to key and IV
     );
