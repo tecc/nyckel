@@ -1,0 +1,11 @@
+# CMake Files
+cmake-build-*/
+build/
+out/
+
+# IDE files
+# - IntelliJ-based
+.idea/
+*.iml
+# - Visual Studio Code
+.vscode/
